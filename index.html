@@ -1,1 +1,402 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cricket Career Pro</title>
+    <style>
+        :root {
+            --primary: #2e7d32;
+            --secondary: #1b5e20;
+            --accent: #ffd600;
+            --light: #f5f5f5;
+            --dark: #212121;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #e0e0e0;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        #game-container {
+            width: 100%;
+            max-width: 600px;
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+
+        .screen { display: none; }
+        .active { display: block; }
+
+        h1, h2 { color: var(--primary); text-align: center; }
+
+        /* UI Elements */
+        .stats-bar {
+            display: flex;
+            justify-content: space-around;
+            background: var(--dark);
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 0.9em;
+        }
+
+        input, select, button {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+        }
+
+        button {
+            background-color: var(--primary);
+            color: white;
+            font-weight: bold;
+            border: none;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        button:hover { background-color: var(--secondary); }
+
+        /* Gameplay Tiles */
+        .tile-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .tile {
+            height: 100px;
+            background: var(--primary);
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2em;
+            font-weight: bold;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .tile:active { transform: scale(0.95); }
+
+        .log {
+            height: 100px;
+            overflow-y: auto;
+            background: #eee;
+            padding: 10px;
+            font-size: 0.85em;
+            margin-top: 15px;
+            border-radius: 5px;
+        }
+
+        .promotion-badge {
+            background: var(--accent);
+            padding: 5px;
+            text-align: center;
+            font-weight: bold;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border-bottom: 1px solid #ddd; padding: 8px; text-align: left; }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <!-- SETUP SCREEN -->
+    <div id="setup-screen" class="screen active">
+        <h1>Cricket Career</h1>
+        <input type="text" id="p-name" placeholder="Your Name">
+        <select id="p-team">
+            <option value="Titans">Mumbai Titans</option>
+            <option value="Kings">Delhi Kings</option>
+            <option value="Riders">Kolkata Riders</option>
+            <option value="Superstars">Bangalore Superstars</option>
+            <option value="Warriors">Chennai Warriors</option>
+            <option value="Lions">Punjab Lions</option>
+        </select>
+        <select id="p-role">
+            <option value="Batsman">Batsman (Goal: 300 Runs)</option>
+            <option value="All-rounder">All-rounder (Goal: 200 Runs, 5 Wkts)</option>
+            <option value="Bowler">Bowler (Goal: 10 Wkts)</option>
+        </select>
+        <select id="p-pos">
+            <option value="1">Opener (Pos 1)</option>
+            <option value="3">Top Order (Pos 3)</option>
+            <option value="5">Middle Order (Pos 5)</option>
+            <option value="8">Tailender (Pos 8)</option>
+        </select>
+        <button onclick="initCareer()">Start Career</button>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div id="dashboard-screen" class="screen">
+        <div class="promotion-badge" id="div-badge">Division 3</div>
+        <div class="stats-bar">
+            <div>Runs: <b id="stat-runs">0</b></div>
+            <div>Wickets: <b id="stat-wickets">0</b></div>
+            <div>Matches: <b id="stat-matches">0</b>/10</div>
+        </div>
+        <h3>Season Schedule</h3>
+        <p id="match-info">Next up: Match 1 of 10</p>
+        <button onclick="startMatch()">Play Next Match</button>
+    </div>
+
+    <!-- MATCH SCREEN -->
+    <div id="match-screen" class="screen">
+        <h2 id="match-header">Match Start</h2>
+        <div id="scoreboard" style="text-align:center; font-size: 1.5em; font-weight:bold; margin: 10px 0;">
+            0/0 (0.0)
+        </div>
+        <div id="match-msg" style="text-align:center; color: #666; margin-bottom: 10px;">Tossing the coin...</div>
+        
+        <div id="tile-area" class="tile-grid" style="display:none;">
+            <div class="tile" onclick="playBall()">?</div>
+            <div class="tile" onclick="playBall()">?</div>
+            <div class="tile" onclick="playBall()">?</div>
+            <div class="tile" onclick="playBall()">?</div>
+        </div>
+
+        <div class="log" id="match-log"></div>
+        <button id="continue-btn" style="display:none;" onclick="backToDash()">Back to Dashboard</button>
+    </div>
+</div>
+
+<script>
+    // GAME STATE
+    let player = {};
+    let currentMatch = {
+        overs: 0,
+        balls: 0,
+        runs: 0,
+        wickets: 0,
+        target: Infinity,
+        isInnings2: false,
+        playerBatting: false,
+        playerBowling: false,
+        lastOverBowled: -1,
+        opponent: ""
+    };
+
+    const TEAMS = ["Titans", "Kings", "Riders", "Superstars", "Warriors", "Lions"];
+
+    function initCareer() {
+        player = {
+            name: document.getElementById('p-name').value || "Player",
+            team: document.getElementById('p-team').value,
+            role: document.getElementById('p-role').value,
+            pos: parseInt(document.getElementById('p-pos').value),
+            division: 3,
+            careerRuns: 0,
+            careerWickets: 0,
+            matchesPlayed: 0
+        };
+        showScreen('dashboard-screen');
+        updateUI();
+    }
+
+    function showScreen(id) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+    }
+
+    function updateUI() {
+        document.getElementById('div-badge').innerText = `Division ${player.division}`;
+        document.getElementById('stat-runs').innerText = player.careerRuns;
+        document.getElementById('stat-wickets').innerText = player.careerWickets;
+        document.getElementById('stat-matches').innerText = player.matchesPlayed;
+        document.getElementById('match-info').innerText = `Next up: Match ${player.matchesPlayed + 1} of 10`;
+    }
+
+    function startMatch() {
+        showScreen('match-screen');
+        currentMatch = { 
+            overs:0, balls:0, runs:0, wickets:0, target: Infinity, 
+            isInnings2: false, playerBatting: false, opponent: TEAMS[Math.floor(Math.random()*TEAMS.length)]
+        };
+        if(currentMatch.opponent === player.team) currentMatch.opponent = "All-Stars";
+        
+        document.getElementById('match-header').innerText = `${player.team} vs ${currentMatch.opponent}`;
+        document.getElementById('match-log').innerHTML = "Match started.<br>";
+        document.getElementById('continue-btn').style.display = 'none';
+        
+        // Toss
+        setTimeout(() => {
+            const winToss = Math.random() > 0.5;
+            const decideToBat = Math.random() > 0.5;
+            if(winToss) {
+                log(`${player.team} won the toss and decided to ${decideToBat ? 'Bat' : 'Bowl'}.`);
+                startInnings(decideToBat);
+            } else {
+                log(`${currentMatch.opponent} won the toss and decided to Bat.`);
+                startInnings(false);
+            }
+        }, 1000);
+    }
+
+    function startInnings(isBatting) {
+        currentMatch.overs = 0; currentMatch.balls = 0; 
+        currentMatch.runs = 0; currentMatch.wickets = 0;
+        
+        if(isBatting) {
+            log(`--- ${player.team} Innings ---`);
+            simulateUntilPlayer();
+        } else {
+            log(`--- ${currentMatch.opponent} Innings ---`);
+            simulateFullInnings();
+        }
+    }
+
+    function simulateUntilPlayer() {
+        while(currentMatch.wickets < player.pos - 1 && currentMatch.overs < 20) {
+            simBall();
+        }
+        
+        if(currentMatch.wickets >= 10 || currentMatch.overs >= 20) {
+            handleInningsEnd();
+        } else {
+            log(`<b>${player.name} comes to the crease!</b>`);
+            currentMatch.playerBatting = true;
+            updateScoreboard();
+            document.getElementById('tile-area').style.display = 'grid';
+        }
+    }
+
+    function playBall() {
+        // Tile Logic: 20% Wicket, else runs
+        currentMatch.balls++;
+        if(currentMatch.balls >= 6) { currentMatch.overs++; currentMatch.balls = 0; }
+
+        if(Math.random() < 0.20) {
+            const types = ["Bowled", "Caught", "LBW"];
+            const outType = types[Math.floor(Math.random()*types.length)];
+            log(`${player.name} is ${outType}!`);
+            currentMatch.wickets++;
+            currentMatch.playerBatting = false;
+            document.getElementById('tile-area').style.display = 'none';
+            simulateRemaining();
+        } else {
+            const scores = [0, 1, 2, 3, 4, 6];
+            const scored = scores[Math.floor(Math.random()*scores.length)];
+            currentMatch.runs += scored;
+            player.careerRuns += scored;
+            log(`${player.name} scores ${scored} run(s).`);
+            updateScoreboard();
+            
+            if(currentMatch.overs >= 20 || currentMatch.runs > currentMatch.target) {
+                handleInningsEnd();
+            }
+        }
+    }
+
+    function simBall() {
+        // Realistic Logic
+        let aggression = 0.05; // Base wicket chance
+        if(currentMatch.overs < 6 || currentMatch.overs > 16) aggression = 0.08;
+        if(currentMatch.wickets > 5) aggression = 0.03; // Play slow
+
+        if(Math.random() < aggression) {
+            currentMatch.wickets++;
+        } else {
+            let runChance = Math.random();
+            if(runChance > 0.9) currentMatch.runs += 4;
+            else if(runChance > 0.7) currentMatch.runs += 1;
+            else if(runChance > 0.6) currentMatch.runs += 2;
+        }
+
+        currentMatch.balls++;
+        if(currentMatch.balls >= 6) { currentMatch.overs++; currentMatch.balls = 0; }
+    }
+
+    function simulateRemaining() {
+        while(currentMatch.wickets < 10 && currentMatch.overs < 20 && currentMatch.runs <= currentMatch.target) {
+            simBall();
+        }
+        handleInningsEnd();
+    }
+
+    function simulateFullInnings() {
+        // AI Bowling to AI or AI Batting
+        while(currentMatch.wickets < 10 && currentMatch.overs < 20 && currentMatch.runs <= currentMatch.target) {
+            simBall();
+            // Simple logic to give bowler wickets
+            if(player.role === "Bowler" || player.role === "All-rounder") {
+                if(Math.random() < 0.02) player.careerWickets++; 
+            }
+        }
+        handleInningsEnd();
+    }
+
+    function handleInningsEnd() {
+        document.getElementById('tile-area').style.display = 'none';
+        if(!currentMatch.isInnings2) {
+            currentMatch.target = currentMatch.runs;
+            currentMatch.isInnings2 = true;
+            log(`Innings over. Target: ${currentMatch.target + 1}`);
+            setTimeout(() => startInnings(!currentMatch.playerBatting), 1500);
+        } else {
+            const win = currentMatch.runs > currentMatch.target;
+            log(`<b>MATCH OVER! ${win ? player.team : currentMatch.opponent} wins!</b>`);
+            player.matchesPlayed++;
+            document.getElementById('continue-btn').style.display = 'block';
+            checkPromotion();
+        }
+        updateScoreboard();
+    }
+
+    function checkPromotion() {
+        if(player.matchesPlayed >= 10) {
+            let success = false;
+            if(player.role === "Batsman" && player.careerRuns >= 300) success = true;
+            if(player.role === "Bowler" && player.careerWickets >= 10) success = true;
+            if(player.role === "All-rounder" && player.careerRuns >= 200 && player.careerWickets >= 5) success = true;
+
+            if(success && player.division > 1) {
+                alert("PROMOTED! You are moving up a division!");
+                player.division--;
+            } else if(!success) {
+                alert("Season over. You didn't meet the goals to promote.");
+            }
+            // Reset for new season
+            player.matchesPlayed = 0;
+            player.careerRuns = 0;
+            player.careerWickets = 0;
+        }
+    }
+
+    function log(msg) {
+        const l = document.getElementById('match-log');
+        l.innerHTML += msg + "<br>";
+        l.scrollTop = l.scrollHeight;
+    }
+
+    function updateScoreboard() {
+        document.getElementById('scoreboard').innerText = 
+            `${currentMatch.runs}/${currentMatch.wickets} (${currentMatch.overs}.${currentMatch.balls})`;
+    }
+
+    function backToDash() {
+        showScreen('dashboard-screen');
+        updateUI();
+    }
+</script>
+
+</body>
+</html>
