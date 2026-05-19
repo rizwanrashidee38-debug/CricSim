@@ -1,5 +1,5 @@
 
-<!DOCTYPE html>
+            <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -38,7 +38,6 @@
 
         h1, h2 { color: var(--primary); text-align: center; }
 
-        /* UI Elements */
         .stats-bar {
             display: flex;
             justify-content: space-around;
@@ -70,7 +69,6 @@
 
         button:hover { background-color: var(--secondary); }
 
-        /* Gameplay Tiles */
         .tile-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -112,15 +110,11 @@
             border-radius: 4px;
             margin-bottom: 10px;
         }
-
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { border-bottom: 1px solid #ddd; padding: 8px; text-align: left; }
     </style>
 </head>
 <body>
 
 <div id="game-container">
-    <!-- SETUP SCREEN -->
     <div id="setup-screen" class="screen active">
         <h1>Cricket Career</h1>
         <input type="text" id="p-name" placeholder="Your Name">
@@ -146,7 +140,6 @@
         <button onclick="initCareer()">Start Career</button>
     </div>
 
-    <!-- DASHBOARD -->
     <div id="dashboard-screen" class="screen">
         <div class="promotion-badge" id="div-badge">Division 3</div>
         <div class="stats-bar">
@@ -159,7 +152,6 @@
         <button onclick="startMatch()">Play Next Match</button>
     </div>
 
-    <!-- MATCH SCREEN -->
     <div id="match-screen" class="screen">
         <h2 id="match-header">Match Start</h2>
         <div id="scoreboard" style="text-align:center; font-size: 1.5em; font-weight:bold; margin: 10px 0;">
@@ -190,8 +182,6 @@
         target: Infinity,
         isInnings2: false,
         playerBatting: false,
-        playerBowling: false,
-        lastOverBowled: -1,
         opponent: ""
     };
 
@@ -237,7 +227,6 @@
         document.getElementById('match-log').innerHTML = "Match started.<br>";
         document.getElementById('continue-btn').style.display = 'none';
         
-        // Toss
         setTimeout(() => {
             const winToss = Math.random() > 0.5;
             const decideToBat = Math.random() > 0.5;
@@ -280,7 +269,6 @@
     }
 
     function playBall() {
-        // Tile Logic: 20% Wicket, else runs
         currentMatch.balls++;
         if(currentMatch.balls >= 6) { currentMatch.overs++; currentMatch.balls = 0; }
 
@@ -293,7 +281,7 @@
             document.getElementById('tile-area').style.display = 'none';
             simulateRemaining();
         } else {
-            const scores = [0, 1, 2, 3, 4, 6];
+            const scores =;
             const scored = scores[Math.floor(Math.random()*scores.length)];
             currentMatch.runs += scored;
             player.careerRuns += scored;
@@ -307,10 +295,9 @@
     }
 
     function simBall() {
-        // Realistic Logic
-        let aggression = 0.05; // Base wicket chance
+        let aggression = 0.05; 
         if(currentMatch.overs < 6 || currentMatch.overs > 16) aggression = 0.08;
-        if(currentMatch.wickets > 5) aggression = 0.03; // Play slow
+        if(currentMatch.wickets > 5) aggression = 0.03; 
 
         if(Math.random() < aggression) {
             currentMatch.wickets++;
@@ -333,10 +320,8 @@
     }
 
     function simulateFullInnings() {
-        // AI Bowling to AI or AI Batting
         while(currentMatch.wickets < 10 && currentMatch.overs < 20 && currentMatch.runs <= currentMatch.target) {
             simBall();
-            // Simple logic to give bowler wickets
             if(player.role === "Bowler" || player.role === "All-rounder") {
                 if(Math.random() < 0.02) player.careerWickets++; 
             }
@@ -374,7 +359,6 @@
             } else if(!success) {
                 alert("Season over. You didn't meet the goals to promote.");
             }
-            // Reset for new season
             player.matchesPlayed = 0;
             player.careerRuns = 0;
             player.careerWickets = 0;
