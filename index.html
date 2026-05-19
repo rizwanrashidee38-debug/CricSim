@@ -1,182 +1,417 @@
 
-<!DOCTYPE html>
+            <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pro Cricket Career Sim</title>
+    <title>Indian Cricket Career Path</title>
     <style>
         :root {
-            --primary: #2e7d32;
-            --secondary: #1b5e20;
-            --accent: #ffd700;
-            --bg: #f4f4f9;
-            --text: #333;
+            --primary: #005A9C;
+            --secondary: #FF9933;
+            --accent: #138808;
+            --bg: #f0f4f8;
+            --text: #222;
         }
 
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; flex-direction: column; align-items: center; }
-        header { background: var(--primary); color: white; width: 100%; padding: 1rem; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; }
+        header { background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; width: 100%; padding: 1.5rem 0; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
         
-        .container { max-width: 800px; width: 90%; margin: 20px auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .container { max-width: 700px; width: 92%; margin: 20px auto; background: white; padding: 25px; border-radius: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
         
-        .stats-bar { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-bottom: 20px; padding: 15px; background: #e8f5e9; border-radius: 8px; border-left: 5px solid var(--primary); }
-        .stat-item { font-weight: bold; font-size: 0.9rem; }
-        .stat-value { color: var(--secondary); display: block; font-size: 1.2rem; }
+        /* Setup Form Styles */
+        .form-group { margin-bottom: 15px; display: flex; flex-direction: column; }
+        .form-group label { font-weight: bold; margin-bottom: 5px; color: #444; }
+        .form-group input, .form-group select { padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 1rem; }
 
-        .log-box { height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; background: #fafafa; border-radius: 5px; margin-bottom: 20px; font-family: monospace; font-size: 0.9rem; }
-        .log-entry { margin-bottom: 5px; border-bottom: 1px solid #eee; padding-bottom: 2px; }
+        /* Stats Dashboard */
+        .dashboard { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px; background: #f9f9f9; padding: 15px; border-radius: 10px; border: 1px solid #eaeaea; }
+        .dash-item { font-size: 0.95rem; font-weight: 500; }
+        .dash-val { font-weight: bold; color: var(--primary); }
 
-        .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        button { padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.3s; }
-        .btn-play { background: var(--primary); color: white; }
-        .btn-play:hover { background: var(--secondary); }
-        .btn-train { background: #cfd8dc; color: #37474f; }
-        .btn-train:hover { background: #b0bec5; }
-        button:disabled { background: #ccc; cursor: not-allowed; }
+        /* Tile System for Batting */
+        .tile-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin: 20px 0; }
+        .tile { background: #34495e; color: white; height: 90px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: bold; border-radius: 12px; cursor: pointer; user-select: none; transition: transform 0.1s, background 0.2s; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .tile:active { transform: scale(0.95); }
+        .tile.revealed { background: #cbd5e1; color: #1e293b; pointer-events: none; }
 
-        .scorecard { margin-top: 20px; padding: 15px; border: 1px dashed #aaa; border-radius: 8px; }
+        /* Controls & Logs */
+        .btn-action { background: var(--accent); color: white; width: 100%; padding: 14px; border: none; border-radius: 8px; font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .btn-action:hover { opacity: 0.9; }
+        
+        .log-box { height: 180px; overflow-y: auto; border: 1px solid #e2e8f0; padding: 12px; background: #f8fafc; border-radius: 8px; margin: 15px 0; font-family: monospace; font-size: 0.9rem; }
+        .log-line { margin-bottom: 6px; border-bottom: 1px solid #f1f5f9; padding-bottom: 4px; }
+        
+        .hidden { display: none !important; }
+        .target-box { background: #fffbeb; border: 1px solid #fef3c7; color: #92400e; padding: 12px; border-radius: 8px; margin-bottom: 15px; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <header>
-    <h1>Cricket Career Pro</h1>
-    <p>From Club Level to World Legend</p>
+    <h1>Indian Cricket Career Simulator</h1>
+    <p id="sub-header">Begin your journey from local divisions to the National Team</p>
 </header>
 
 <div class="container">
-    <div class="stats-bar">
-        <div class="stat-item">Batting Skill<span id="skill-bat" class="stat-value">30</span></div>
-        <div class="stat-item">Fitness<span id="fitness" class="stat-value">100%</span></div>
-        <div class="stat-item">Career Runs<span id="total-runs" class="stat-value">0</span></div>
-        <div class="stat-item">Rank<span id="rank" class="stat-value">Club</span></div>
+    
+    <div id="setup-screen">
+        <h3>Create Your Player</h3>
+        <div class="form-group">
+            <label>Full Name</label>
+            <input type="text" id="p-name" placeholder="Enter your name" value="Rahul Sharma">
+        </div>
+        <div class="form-group">
+            <label>Home State</label>
+            <select id="p-state">
+                <option value="Mumbai">Mumbai</option>
+                <option value="Delhi">Delhi</option>
+                <option value="Karnataka">Karnataka</option>
+                <option value="Tamil Nadu">Tamil Nadu</option>
+                <option value="Uttar Pradesh">Uttar Pradesh</option>
+                <option value="Maharashtra">Maharashtra</option>
+                <option value="Baroda">Baroda</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Playing Role</label>
+            <select id="p-role">
+                <option value="Batsman">Pure Batsman</option>
+                <option value="All-Rounder">All-Rounder</option>
+                <option value="Bowler">Bowling All-Rounder</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Batting Position</label>
+            <select id="p-pos">
+                <option value="1">Opener (#1)</option>
+                <option value="3">Top Order (#3)</option>
+                <option value="5">Middle Order (#5)</option>
+                <option value="7">Finisher (#7)</option>
+            </select>
+        </div>
+        <button class="btn-action" onclick="startGame()">Launch Career</button>
     </div>
 
-    <div id="game-log" class="log-box">
-        <div class="log-entry">Welcome to the Academy. Start training or play your first match!</div>
+    <div id="game-screen" class="hidden">
+        <div class="dashboard">
+            <div class="dash-item">Player: <span id="lbl-name" class="dash-val">-</span></div>
+            <div class="dash-item">Level: <span id="lbl-tier" class="dash-val">-</span></div>
+            <div class="dash-item">Team: <span id="lbl-team" class="dash-val">-</span></div>
+            <div class="dash-item">Next Level Goal: <span id="lbl-goal" class="dash-val">-</span></div>
+            <div class="dash-item">Career Runs: <span id="lbl-runs" class="dash-val">0</span></div>
+            <div class="dash-item">Career Wickets: <span id="lbl-wickets" class="dash-val">0</span></div>
+        </div>
+
+        <div id="target-display" class="target-box hidden"></div>
+
+        <div id="match-area" class="hidden">
+            <h3 id="match-title">Match Engine</h3>
+            <div id="scoreboard" style="font-weight: bold; margin-bottom: 10px; font-size: 1.1rem; color: #1e293b;"></div>
+            
+            <div id="batting-engine" class="hidden">
+                <p><strong>Your Turn to Bat!</strong> Tap a masked tile to face the next ball:</p>
+                <div class="tile-grid">
+                    <div class="tile" onclick="tapTile(0)">?</div>
+                    <div class="tile" onclick="tapTile(1)">?</div>
+                    <div class="tile" onclick="tapTile(2)">?</div>
+                    <div class="tile" onclick="tapTile(3)">?</div>
+                </div>
+            </div>
+
+            <div id="bowling-engine" class="hidden">
+                <p><strong>Your Turn to Bowl!</strong> Standard T20 rules apply. You cannot bowl consecutive overs.</p>
+                <button id="btn-bowl-over" class="btn-action" onclick="bowlPlayerOver()">Bowl Next Over</button>
+            </div>
+        </div>
+
+        <div class="log-box" id="match-log"></div>
+        
+        <button id="btn-next-match" class="btn-action" onclick="startMatch()">Prepare Next Match</button>
     </div>
 
-    <div class="controls">
-        <button class="btn-play" onclick="playMatch()">Play Next Match</button>
-        <button class="btn-train" onclick="train()">Intense Training (-20% Fitness)</button>
-    </div>
-
-    <div id="last-scorecard" class="scorecard" style="display:none;">
-        <h3>Last Match Performance</h3>
-        <p id="match-summary"></p>
-    </div>
 </div>
 
 <script>
-    // Game State
-    let player = {
-        battingSkill: 35,
-        fitness: 100,
-        runs: 0,
-        matches: 0,
-        rank: 'Club Player',
-        highScore: 0
-    };
+    // System Configurations & Data Maps
+    const tiers = ["Division 3", "Division 2", "Division 1", "Ranji Trophy", "Indian National Team"];
+    const tierGoals = [150, 250, 400, 600, Infinity]; // Runs required to level up from each tier
 
-    const levels = [
-        { name: 'Club Player', minSkill: 0 },
-        { name: 'State Level', minSkill: 50 },
-        { name: 'National Star', minSkill: 75 },
-        { name: 'World Legend', minSkill: 95 }
-    ];
+    let player = {};
+    let match = {};
 
-    function log(message) {
-        const logBox = document.getElementById('game-log');
-        const entry = document.createElement('div');
-        entry.className = 'log-entry';
-        entry.innerText = message;
-        logBox.prepend(entry);
-    }
+    function startGame() {
+        player = {
+            name: document.getElementById('p-name').value || "Rahul Sharma",
+            state: document.getElementById('p-state').value,
+            role: document.getElementById('p-role').value,
+            pos: parseInt(document.getElementById('p-pos').value),
+            tierIndex: 0, 
+            careerRuns: 0,
+            careerWickets: 0,
+            matchesPlayed: 0
+        };
 
-    function updateUI() {
-        document.getElementById('skill-bat').innerText = player.battingSkill;
-        document.getElementById('fitness').innerText = player.fitness + '%';
-        document.getElementById('total-runs').innerText = player.runs;
+        document.getElementById('setup-screen').classList.add('hidden');
+        document.getElementById('game-screen').classList.remove('hidden');
         
-        // Update Rank
-        const currentRank = levels.filter(l => player.battingSkill >= l.minSkill).pop();
-        player.rank = currentRank.name;
-        document.getElementById('rank').innerText = player.rank;
+        updateDashboard();
+        appendLog(`Welcome ${player.name}! Your journey begins right now in ${tiers[player.tierIndex]}. Fill your selectors and score runs to make it to the grand stage.`);
     }
 
-    function train() {
-        if (player.fitness < 25) {
-            log("⚠️ You're too exhausted to train! Rest up.");
+    function updateDashboard() {
+        document.getElementById('lbl-name').innerText = player.name;
+        document.getElementById('lbl-tier').innerText = tiers[player.tierIndex];
+        document.getElementById('lbl-team').innerText = player.tierIndex >= 3 ? player.state : `${player.state} Academy`;
+        
+        let goalText = tierGoals[player.tierIndex] === Infinity ? "Ultimate Level" : `${player.careerRuns}/${tierGoals[player.tierIndex]} Runs`;
+        document.getElementById('lbl-goal').innerText = goalText;
+        document.getElementById('lbl-runs').innerText = player.careerRuns;
+        document.getElementById('lbl-wickets').innerText = player.careerWickets;
+    }
+
+    function appendLog(text) {
+        const logBox = document.getElementById('match-log');
+        logBox.innerHTML += `<div class="log-line">${text}</div>`;
+        logBox.scrollTop = logBox.scrollHeight;
+    }
+
+    function checkPromotion() {
+        let currentGoal = tierGoals[player.tierIndex];
+        if (player.careerRuns >= currentGoal && player.tierIndex < tiers.length - 1) {
+            player.tierIndex++;
+            appendLog(`🎉 PROMOTION! You have stepped up to the **${tiers[player.tierIndex]}**!`);
+            updateDashboard();
+        }
+    }
+
+    // --- Core Match Engine Logic ---
+    function startMatch() {
+        document.getElementById('match-log').innerHTML = ""; // clear old logs
+        document.getElementById('btn-next-match').classList.add('hidden');
+        document.getElementById('match-area').classList.remove('hidden');
+
+        // Setup Match State
+        match = {
+            totalOvers: 20,
+            currentInnings: 1,
+            oversBowled: 0,
+            ballsInOver: 0,
+            teamRuns: 0,
+            teamWickets: 0,
+            playerRuns: 0,
+            playerBalls: 0,
+            playerWickets: 0,
+            playerOversBowled: 0,
+            lastOverBowledByPlayer: false,
+            playerOut: false,
+            target: 0
+        };
+
+        // Toss logic simulation
+        let tossWonByUs = Math.random() > 0.5;
+        let choice = Math.random() > 0.5 ? "Bat" : "Bowl";
+        
+        appendLog(`🪙 Toss time! ${tossWonByUs ? 'Your Captain' : 'Opponent Captain'} won the toss and decided to **${choice}** first.`);
+
+        if ((tossWonByUs && choice === "Bat") || (!tossWonByUs && choice === "Bowl")) {
+            setupInnings(1, "Batting");
+        } else {
+            setupInnings(1, "Bowling");
+        }
+    }
+
+    function setupInnings(num, action) {
+        match.currentInnings = num;
+        match.oversBowled = 0;
+        match.ballsInOver = 0;
+        match.teamRuns = 0;
+        match.teamWickets = 0;
+        match.action = action;
+
+        if (num === 2) {
+            match.target = match.teamRuns + 1;
+            match.teamRuns = 0;
+            match.teamWickets = 0;
+            document.getElementById('target-display').classList.remove('hidden');
+            document.getElementById('target-display').innerText = `Target to Win: ${match.target} runs in 20 overs.`;
+        } else {
+            document.getElementById('target-display').classList.add('hidden');
+        }
+
+        appendLog(`🏏 --- Start of Innings ${num} (${action}) ---`);
+        executeInningsProgression();
+    }
+
+    function executeInningsProgression() {
+        updateScoreboard();
+
+        if (match.oversBowled >= match.totalOvers || match.teamWickets >= 10 || (match.currentInnings === 2 && match.teamRuns >= match.target)) {
+            endInnings();
             return;
         }
-        
-        let gain = Math.floor(Math.random() * 3) + 1;
-        player.battingSkill += gain;
-        player.fitness -= 20;
-        log(`🏋️ Training complete! Batting skill increased by ${gain}.`);
-        updateUI();
+
+        if (match.action === "Batting") {
+            document.getElementById('bowling-engine').classList.add('hidden');
+            // If player's position is reached, give manual control
+            if (match.teamWickets === (player.p_pos - 1) && !match.playerOut) {
+                document.getElementById('batting-engine').classList.remove('hidden');
+                resetTiles();
+            } else {
+                // Automate game until player enters or player is out
+                document.getElementById('batting-engine').classList.add('hidden');
+                simulateBallsAutomated(6); // Simulate an over block
+            }
+        } else if (match.action === "Bowling") {
+            document.getElementById('batting-engine').classList.add('hidden');
+            
+            // Allow bowling option if constraints met (max 4 overs in T20, non-consecutive)
+            if (match.playerOversBowled < 4 && !match.lastOverBowledByPlayer) {
+                document.getElementById('bowling-engine').classList.remove('hidden');
+            } else {
+                document.getElementById('bowling-engine').classList.add('hidden');
+                simulateOpponentOver(); // Simulate standard automated over
+            }
+        }
     }
 
-    function playMatch() {
-        if (player.fitness < 40) {
-            log("❌ Low fitness! You're likely to get injured or play poorly.");
+    function updateScoreboard() {
+        let scoreStr = `Innings ${match.currentInnings} | Score: ${match.teamRuns}/${match.teamWickets} | Overs: ${match.oversBowled}.${match.ballsInOver}`;
+        if (match.action === "Batting" && match.teamWickets >= (player.pos - 1) && !match.playerOut) {
+            scoreStr += ` <br>🔴 You are batting: ${match.playerRuns}* (${match.playerBalls}b)`;
         }
+        document.getElementById('scoreboard').innerHTML = scoreStr;
+    }
 
-        let matchRuns = 0;
-        let ballsFaced = 0;
-        let out = false;
+    // --- Batting Action: Masked Tiles ---
+    const outcomes = ["1 Run", "2 Runs", "3 Runs", "4 Runs", "6 Runs", "Bowled", "Catch Out", "0 Runs"];
 
-        // Realistic Logic Loop
-        // Higher skill = lower chance of being out, higher chance of boundaries
-        while (!out && ballsFaced < 120) { // Max 120 balls (T20 style)
-            ballsFaced++;
-            let chance = Math.random() * 100;
-            
-            // Out Logic (influenced by skill and fitness)
-            let outThreshold = 5 - (player.battingSkill / 25) + (100 - player.fitness) / 20;
-            
-            if (chance < Math.max(2, outThreshold)) {
-                out = true;
+    function resetTiles() {
+        const tiles = document.querySelectorAll('.tile');
+        tiles.forEach(tile => {
+            tile.innerText = "?";
+            tile.classList.remove('revealed');
+        });
+    }
+
+    function tapTile(index) {
+        match.playerBalls++;
+        match.ballsInOver++;
+        
+        // Randomly select a clean probabilistic outcome
+        let result = outcomes[Math.floor(Math.random() * outcomes.length)];
+        
+        const tiles = document.querySelectorAll('.tile');
+        tiles[index].innerText = result;
+        tiles[index].classList.add('revealed');
+
+        setTimeout(() => {
+            if (result.includes("Out") || result === "Bowled") {
+                appendLog(`❌ You are OUT (${result})! Scored ${match.playerRuns} runs off ${match.playerBalls} balls.`);
+                match.playerOut = true;
+                match.teamWickets++;
+                player.careerRuns += match.playerRuns;
+                document.getElementById('batting-engine').classList.add('hidden');
+                checkPromotion();
             } else {
-                // Scoring Logic
-                let scoringRoll = Math.random() * 100 + (player.battingSkill / 5);
-                if (scoringRoll > 90) matchRuns += 6;
-                else if (scoringRoll > 75) matchRuns += 4;
-                else if (scoringRoll > 40) matchRuns += 1;
-                else if (scoringRoll > 30) matchRuns += 2;
-                // else dot ball
+                let runsGained = result === "0 Runs" ? 0 : parseInt(result.split(" "));
+                match.playerRuns += runsGained;
+                match.teamRuns += runsGained;
+                appendLog(`Ball ${match.oversBowled}.${match.ballsInOver}: You hit a ${result}!`);
+            }
+
+            if (match.ballsInOver >= 6) {
+                match.oversBowled++;
+                match.ballsInOver = 0;
+            }
+
+            updateDashboard();
+            executeInningsProgression();
+        }, 600);
+    }
+
+    // --- Bowling Action Engine ---
+    function bowlPlayerOver() {
+        document.getElementById('bowling-engine').classList.add('hidden');
+        match.lastOverBowledByPlayer = true;
+        match.playerOversBowled++;
+        
+        let overRuns = 0;
+        let overWickets = 0;
+
+        for (let b = 0; b < 6; b++) {
+            let roll = Math.random();
+            if (roll < 0.08) {
+                overWickets++;
+            } else if (roll < 0.4) {
+                overRuns += Math.floor(Math.random() * 2); // 0 or 1 run
+            } else {
+                overRuns += Math.random() > 0.7 ? 4 : 2; // boundaries or standard rotation
             }
         }
 
-        // Apply results
-        player.runs += matchRuns;
-        player.matches++;
-        player.fitness = Math.max(10, player.fitness - 15);
-        if (matchRuns > player.highScore) player.highScore = matchRuns;
+        match.teamRuns += overRuns;
+        match.teamWickets += overWickets;
+        match.oversBowled++;
+        player.careerWickets += overWickets;
 
-        // Skill progression through experience
-        if (matchRuns > 50) player.battingSkill += 1;
-
-        // Show Scorecard
-        document.getElementById('last-scorecard').style.display = 'block';
-        document.getElementById('match-summary').innerHTML = `
-            <strong>Score:</strong> ${matchRuns} (${ballsFaced} balls) ${out ? 'out' : 'not out'}<br>
-            <strong>Strike Rate:</strong> ${((matchRuns/ballsFaced)*100).toFixed(2)}
-        `;
-
-        log(`🏏 Match ${player.matches}: Scored ${matchRuns} runs.`);
-        
-        // Passive fitness recovery
-        setTimeout(() => {
-            player.fitness = Math.min(100, player.fitness + 5);
-            updateUI();
-        }, 2000);
-
-        updateUI();
+        appendLog(`🔮 You bowled over ${match.oversBowled}. Conceded ${overRuns} runs and took ${overWickets} wickets!`);
+        updateDashboard();
+        executeInningsProgression();
     }
 
-    // Initialize
-    updateUI();
+    // --- Automated Match Systems ---
+    function simulateBallsAutomated(count) {
+        for (let i = 0; i < count; i++) {
+            if (match.oversBowled >= match.totalOvers || match.teamWickets >= 10) break;
+
+            match.ballsInOver++;
+            let roll = Math.random();
+            
+            if (roll < 0.06) {
+                match.teamWickets++;
+            } else {
+                let runs =[Math.floor(Math.random() * 5)];
+                match.teamRuns += runs;
+            }
+
+            if (match.ballsInOver >= 6) {
+                match.oversBowled++;
+                match.ballsInOver = 0;
+            }
+        }
+        executeInningsProgression();
+    }
+
+    function simulateOpponentOver() {
+        match.lastOverBowledByPlayer = false; // Player skipped this over, can bowl next
+        simulateBallsAutomated(6);
+    }
+
+    function endInnings() {
+        appendLog(`🏁 Innings completed. Final score: ${match.teamRuns}/${match.teamWickets}`);
+        
+        if (match.currentInnings === 1) {
+            let nextAction = match.action === "Batting" ? "Bowling" : "Batting";
+            setupInnings(2, nextAction);
+        } else {
+            concludeMatch();
+        }
+    }
+
+    function concludeMatch() {
+        document.getElementById('match-area').classList.add('hidden');
+        document.getElementById('target-display').classList.add('hidden');
+        document.getElementById('btn-next-match').classList.remove('hidden');
+        
+        let won = false;
+        if (match.action === "Batting" && match.teamRuns >= match.target) won = true;
+        if (match.action === "Bowling" && match.teamRuns < match.target) won = true;
+
+        appendLog(`🏁 **MATCH OVER!** ${won ? "🎉 Your team won the match!" : "❌ Your team lost the match."}`);
+        player.matchesPlayed++;
+        updateDashboard();
+    }
 </script>
 
 </body>
